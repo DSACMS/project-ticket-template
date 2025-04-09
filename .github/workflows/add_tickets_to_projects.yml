@@ -8,10 +8,33 @@ jobs:
     add_to_project:
         runs-on: ubuntu-latest
         steps:
+            - name: Authenticate GitHub CLI
+              run: echo "GH_PAT" | gh auth login --with-token
+              env:
+                GH_PAT: ${{ secrets.GH_PAT}}
+
+            - name: Debug Issue Data
+              run: echo "Issue Title: ${{ github.event.issue.title  }} - Issue Body: ${{ github.event.issue.body }}"
+
             - name: Add issue to project
               env:
-                token: ${{ secrets.pat }}
+                GH_PAT: ${{ secrets.GH_PAT }}
                 PROJECT_ID: "https://github.com/orgs/DSACMS/projects/9"
               run: |
-                gh auth login --with token <<< "$token"
-                gh project item-create $PROJECT_ID --title "{{ github.event.issue.title  }}" --body "{{ github.event.issue.body }}"
+                ISSUE_ID=$(gh api graphql -f query='
+                    query {
+                        repository(owner:"${{ github.repository_owner }}", name:"${{ github.event.repository.name }}") {
+                            issue(number: ${{ github.event.issue.number }}) {
+                                id
+                            }
+                        }
+                    }' | qj -r '.data.repository.issue.id')
+
+                gh api graphql -f query='
+                    mutation {
+                        addProjectV2ItemById(input: {projectId: $PROJECT_ID, contentId: "$ISSUE_ID"}) {
+                            item {
+                                id
+                            }
+                        }
+                    }'
