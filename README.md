@@ -1,6 +1,6 @@
 # project-ticket-template
 
-This teplate creates tickets in project boards
+This template creates tickets in project boards
 
 ## About the Project
 This is a test project to create ticket templates within GitHub project boards.
